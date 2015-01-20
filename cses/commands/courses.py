@@ -1,5 +1,7 @@
 import click
+
 from functools import wraps
+from os import path, makedirs
 
 from cses.cli import cli
 from cses.api import API
@@ -54,10 +56,13 @@ def select(ctx):
     "Allows you to select the current course"
     api = ctx.ensure_object(API)
     db = ctx.ensure_object(DB)
+
     id = db.course
     courses = api.courses()
     valid_ids = [x["id"] for x in courses]
+
     show_courses(courses, id)
+
     while 1:
         id = click.prompt("Enter a course id", default=id, type=int)
         if id not in valid_ids:
@@ -66,7 +71,23 @@ def select(ctx):
         else:
             break
     db.course = id
-    if "files" not in db:
+
+    if not db.paths:
+        db.paths = {}
+    if not db.files:
         db.files = {}
     if id not in db.files:
         db.files[id] = {}
+
+    name = ""
+    for i in courses:
+        if i["id"] == id:
+            name = i["nick"]
+            break
+    else:
+        ctx.fail("Could not field the course")
+
+    defpath = path.join(path.expanduser("~"), "cses", name)
+    defpath = click.prompt("Default task path", default=defpath)
+    makedirs(defpath)
+    db.paths[id] = defpath

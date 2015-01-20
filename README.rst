@@ -29,6 +29,12 @@ there is no collision.
    cses associate FILE
        associates the FILE with the current task
    cses submit
-       submits the current FILE to the server and prints the response
+       submits the current task to the server and prints the response
+   cses create
+       creates a file for the task
+   cses edit
+       edits the current tasks file with your default editor ($EDITOR)
+   cses show
+       shows the current tasks description in your browser
 
 .. _cses.fi: http://cses.fi/

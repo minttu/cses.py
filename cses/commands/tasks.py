@@ -1,6 +1,7 @@
 import click
 import sys
 import time
+import os
 from functools import wraps
 
 from cses.cli import cli
@@ -33,14 +34,28 @@ def pass_task(f):
     return wrapper
 
 
-def show_task(tasks, id):
-    click.echo("{}: {}".format(tasks[id]["id"],
-                               tasks[id]["name"]))
+def show_task(tasks, pos, id=None, files={}):
+    task = tasks[pos]
+    fname = ""
+    if task["id"] in files:
+        fname = files[task["id"]]
+    selected = "(Selected)" if id is task["id"] else ""
+    status = ""
+    if "status" in task:
+        status = " (" + task["status"].capitalize() + ")"
+    click.echo("{}: {}{} [{}] {}".format(task["id"],
+                                         task["name"],
+                                         status,
+                                         fname,
+                                         selected))
 
 
 def show_tasks(tasks, id=None, files={}):
     section = None
-    for task in tasks:
+    if "result" in tasks:
+        click.echo(tasks["message"])
+        return
+    for ind, task in enumerate(tasks):
         if task["section"] != section:
             coursename = "{} ({})".format(task["section"], task["deadline"])
             if section != None:
@@ -48,14 +63,7 @@ def show_tasks(tasks, id=None, files={}):
             click.echo(coursename)
             click.echo("=" * len(coursename))
             section = task["section"]
-        fname = ""
-        if int(task["id"]) in files:
-            fname = files[int(task["id"])]
-        selected = "(Selected)" if id is int(task["id"]) else ""
-        click.echo("{}: {} [{}] {}".format(task["id"],
-                                      task["name"],
-                                      fname,
-                                      selected))
+        show_task(tasks, ind, id, files)
 
 
 @tasks.command()
@@ -66,7 +74,9 @@ def show(ctx, course):
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
 
-    show_tasks(api.tasks(course), db.task, db.files[course])
+    show_tasks(api.tasks(course,
+                         db.username,
+                         db.password), db.task, db.files[course])
 
 
 @tasks.command()
@@ -77,9 +87,9 @@ def select(ctx, course):
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
 
-    tasks = api.tasks(course)
+    tasks = api.tasks(course, db.username, db.password)
     id = db.task
-    valid_ids = [int(x["id"]) for x in tasks]
+    valid_ids = [x["id"] for x in tasks]
     show_tasks(tasks, id, db.get("files", {}).get(course, {}))
 
     while 1:
@@ -101,28 +111,28 @@ def next(ctx, course, dir=1):
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
 
-    tasks = api.tasks(course)
+    tasks = api.tasks(course, db.username, db.password)
     id = db.task
     if id == None:
         if len(tasks) > 0:
-            id = int(tasks[0]["id"])
+            id = tasks[0]["id"]
         else:
             ctx.fail("Course has no tasks")
-        show_task(tasks, 0)
+        show_task(tasks, 0, 0, db.files[course])
     else:
         pos = -1
         for i, task in enumerate(tasks):
-            if int(task["id"]) is id:
+            if task["id"] is id:
                 pos = i
                 break
         if pos == -1:
             ctx.fail("I don't know how you managed this")
         new = pos + dir
         if new < len(tasks) and new >= 0:
-            id = int(tasks[pos + dir]["id"])
+            id = tasks[pos + dir]["id"]
         else:
             ctx.fail("You are at the end of the available tasks")
-        show_task(tasks, new)
+        show_task(tasks, new, id, db.files[course])
     db.task = id
 
 
@@ -174,7 +184,7 @@ def submit(ctx, course, task):
     if sendreq["result"] == "error":
         ctx.fail(sendreq["message"])
 
-    ticket = int(sendreq["ticket"])
+    ticket = sendreq["ticket"]
     click.echo("Submission ID: {}, waiting for results...".format(ticket))
 
     old_status = ""
@@ -205,3 +215,101 @@ def submit(ctx, course, task):
             old_status = status
 
         time.sleep(1)
+
+
+@cli.command()
+@click.pass_context
+@pass_course
+@pass_task
+def show(ctx, course, task):
+    "Shows the tasks description in a browser"
+    db = ctx.ensure_object(DB)
+    api = ctx.ensure_object(API)
+
+    courses = api.courses()
+    name = ""
+    for i in courses:
+        if i["id"] == course:
+            name = i["nick"]
+            break
+    else:
+        ctx.fail("Could not field the course")
+
+    click.launch("http://cses.fi/{}/task/{}/".format(name, task))
+
+
+@cli.command()
+@click.pass_context
+@pass_course
+@pass_task
+def edit(ctx, course, task):
+    "Edits the current tasks file"
+    db = ctx.ensure_object(DB)
+
+    if not db.files or course not in db.files or task not in db.files[course]:
+        ctx.fail("No file associated with that task")
+
+    file = db.files[course][task]
+    click.edit(filename=file)
+
+
+@cli.command()
+@click.pass_context
+@pass_course
+@pass_task
+def create(ctx, course, task):
+    "Creates a file for the current task"
+    db = ctx.ensure_object(DB)
+    api = ctx.ensure_object(API)
+
+    if task in db.files[course]:
+        if not click.confirm("There is already a file, change the file"):
+            return
+
+    fname = ""
+    fcontent = ""
+    click.echo("Available languages:")
+    click.echo(", ".join([x[0] for x in FileType.data]))
+    while True:
+        sel = click.prompt("The language", default="C++")
+        sel = sel.lower()
+        for lang in FileType.data:
+            if lang[0].lower().startswith(sel):
+                fname = lang[1][0]
+                fcontent = lang[2]
+                break
+        else:
+            if not click.confirm("Can't understand you, try again",
+                                 default=True):
+                ctx.fail("Could not select language")
+            else:
+                continue
+        break
+
+    tasks = api.tasks(course, db.username, db.password)
+    for i in tasks:
+        if i["id"] == task:
+            fcontent = fcontent.format(i["name"])
+            fname = i["name"].replace(" ", "_") + "." + fname
+            break
+    else:
+        ctx.fail("Could not find the task")
+
+    if course not in db.paths:
+        ctx.fail("The course doesn't have a default path")
+
+    path = os.path.join(db.paths[course], fname)
+    try:
+        os.makedirs(os.path.split(path)[0])
+    except FileExistsError:
+        pass
+
+    if os.path.isfile(path):
+        if click.confirm(("There is already a file"
+                          "with the name {} "
+                          "associate it instead?").format(path), default=True):
+            return ctx.invoke(associate, filename=path)
+
+    with open(path, "w") as fp:
+        fp.write(fcontent)
+    ctx.invoke(associate, filename=path)
