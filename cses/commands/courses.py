@@ -66,3 +66,7 @@ def select(ctx):
         else:
             break
     db.course = id
+    if "files" not in db:
+        db.files = {}
+    if id not in db.files:
+        db.files[id] = {}

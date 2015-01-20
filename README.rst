@@ -6,6 +6,8 @@ A command line client for `cses.fi`_
 Currently very incomplete. All of the commands can be abbreviated as long as
 there is no collision.
 
+.. code::
+
    cses conf
        set your username and password
 
@@ -18,11 +20,15 @@ there is no collision.
        show all tasks in the currently selected course
    cses task select
        select your task
-   cses task next
+
+   cses next
        go to the next task
-   cses task previous
+   cses previous
        go to the previous task
 
-More commands (actually submitting) coming soon.
+   cses associate FILE
+       associates the FILE with the current task
+   cses submit
+       submits the current FILE to the server and prints the response
 
 .. _cses.fi: http://cses.fi/
