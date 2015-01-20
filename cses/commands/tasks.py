@@ -5,15 +5,35 @@ from cses.cli import cli
 from cses.api import API
 from cses.db import DB
 from cses.shorthand_group import ShorthandGroup
+from cses.commands.courses import pass_course
+
 
 @cli.group(cls=ShorthandGroup)
 def tasks():
     "Stuff about tasks"
 
 
+def pass_exercise(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        ctx = args[0]
+        db = ctx.ensure_object(DB)
+        api = ctx.ensure_object(API)
+
+        task = db.task
+        if task is None:
+            ctx.invoke(select)
+            task = db.task
+
+        args = args + (task,)
+        return f(*args, **kwds)
+    return wrapper
+
+
 def show_task(tasks, id):
     click.echo("{}: {}".format(tasks[id]["id"],
                                tasks[id]["name"]))
+
 
 def show_tasks(tasks, id=None):
     section = None
@@ -30,23 +50,6 @@ def show_tasks(tasks, id=None):
                                       "(Selected)" if id is int(task["id"]) else ""))
 
 
-def pass_course(f):
-    @wraps(f)
-    def wrapper(*args, **kwds):
-        ctx = args[0]
-        db = ctx.ensure_object(DB)
-        api = ctx.ensure_object(API)
-
-        course = db.course
-        if course is None:
-            import cses.commands.courses
-            ctx.invoke(cses.commands.courses.select)
-
-        args = args + (course,)
-        return f(*args, **kwds)
-    return wrapper
-
-
 @tasks.command()
 @click.pass_context
 @pass_course
@@ -56,6 +59,7 @@ def show(ctx, course):
     api = ctx.ensure_object(API)
 
     show_tasks(api.tasks(course), db.task)
+
 
 @tasks.command()
 @click.pass_context
@@ -79,6 +83,7 @@ def select(ctx, course):
             break
 
     db.task = id
+
 
 @tasks.command()
 @click.pass_context
@@ -110,6 +115,7 @@ def next(ctx, course, dir=1):
         else:
             ctx.fail("You are at the end of the available tasks")
         show_task(tasks, new)
+
 
 @tasks.command()
 @click.pass_context

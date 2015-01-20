@@ -1,20 +1,43 @@
 import click
+from functools import wraps
 
 from cses.cli import cli
 from cses.api import API
 from cses.db import DB
 from cses.shorthand_group import ShorthandGroup
 
+
 @cli.group(cls=ShorthandGroup)
 @click.pass_context
 def courses(ctx):
     "Stuff about courses"
 
+
+def pass_course(f):
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        ctx = args[0]
+        db = ctx.ensure_object(DB)
+        api = ctx.ensure_object(API)
+
+        course = db.course
+        if course is None:
+            ctx.invoke(select)
+            course = db.course
+
+        args = args + (course,)
+        return f(*args, **kwds)
+    return wrapper
+
+
 def show_courses(courses, id=None):
+    click.echo("Courses")
+    click.echo("=======")
     for course in courses:
         click.echo("{}: {} {}".format(course["id"],
                                       course["name"],
                                       "(Selected)" if id is course["id"] else ""))
+
 
 @courses.command()
 @click.pass_context
@@ -23,6 +46,7 @@ def show(ctx):
     api = ctx.ensure_object(API)
     db = ctx.ensure_object(DB)
     show_courses(api.courses(), db.course)
+
 
 @courses.command()
 @click.pass_context

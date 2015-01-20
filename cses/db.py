@@ -8,7 +8,7 @@ class DB(object):
     def __init__(self):
         data = shelve.open(path.join(path.expanduser("~"),
                                      ".config",
-                                     "cses"),
+                                     "cses.db"),
                            writeback=True)
         super().__setattr__("shelve", data)
         atexit.register(data.close)
@@ -20,4 +20,4 @@ class DB(object):
         self.shelve[name] = value
 
 
-give_db = click.make_pass_decorator(DB, ensure=True)
+pass_db = click.make_pass_decorator(DB, ensure=True)

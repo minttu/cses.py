@@ -1,3 +1,4 @@
+import click
 import requests
 
 from cses.version import __version__
@@ -19,8 +20,11 @@ class API(object):
     def courses(self):
         return self.post("courses")
 
-    def tasks(self, course):
-        return self.post("tasks", {"course": course})
+    def tasks(self, course, username="", password=""):
+        return self.post("tasks",
+                         {"course": course,
+                          "nick": username,
+                          "pass": password})
 
     def auth(self, username, password):
         return self.post("auth",
@@ -41,3 +45,6 @@ class API(object):
                          {"nick": username,
                           "pass": password,
                           "ticket": submission})
+
+
+pass_api = click.make_pass_decorator(API, ensure=True)
