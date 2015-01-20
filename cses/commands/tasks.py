@@ -205,7 +205,7 @@ def submit(ctx, course, task):
             click.echo("{}Test results".format(lineclear))
             click.echo("============")
             for ind, test in enumerate(resreq["test"]):
-                click.echo("{}: {}".format(ind, test["status"]))
+                click.echo("#{}: {}".format(ind+1, test["status"]))
             click.echo("Score: {}".format(resreq["score"]))
             break
 
