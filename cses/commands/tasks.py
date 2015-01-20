@@ -90,7 +90,7 @@ def select(ctx, course):
     tasks = api.tasks(course, db.username, db.password)
     id = db.task
     valid_ids = [x["id"] for x in tasks]
-    show_tasks(tasks, id, db.get("files", {}).get(course, {}))
+    show_tasks(tasks, id, db.files.get(course, {}))
 
     while 1:
         id = click.prompt("Enter a task id", default=id, type=int)

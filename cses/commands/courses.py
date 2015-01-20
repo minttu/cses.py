@@ -87,7 +87,10 @@ def select(ctx):
     else:
         ctx.fail("Could not field the course")
 
-    defpath = path.join(path.expanduser("~"), "cses", name)
+    defpath = db.paths.get(id, path.join(path.expanduser("~"), "cses", name))
     defpath = click.prompt("Default task path", default=defpath)
-    makedirs(defpath)
+    try:
+        makedirs(defpath)
+    except FileExistsError:
+        pass
     db.paths[id] = defpath

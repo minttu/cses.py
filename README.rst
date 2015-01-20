@@ -6,6 +6,26 @@ A command line client for `cses.fi`_
 Currently very incomplete. All of the commands can be abbreviated as long as
 there is no collision.
 
+Installing
+----------
+
+Clone the repo, start a virtualenv and ``./setup.py install``. Or if you don't
+do virtualenvs just ``sudo ./setup.py install``. Currently tested only only on
+``Python 3.4`` on Linux, but should work with at least ``Python 3.2`` too.
+
+Using
+-----
+
+First ``cses conf`` to set your credentials. Then ``cses task select`` to select
+a course and a task. If you already have some code, you can use ``cses assoc``
+to associate it with the selected task. If you would like a new file, use
+``cses create``. To edit your selected file you can use ``cses edit`` and to
+view the description of the task in your browser you can use ``cses show``.
+Finally, to submit your code for evaluation, you can use ``cses submit``.
+
+Commands
+--------
+
 .. code::
 
    cses conf

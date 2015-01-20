@@ -7,11 +7,11 @@ using namespace std;
 /**
  * Task: {0}
  */
-int main() {
+int main() {{
     cin.sync_with_stdio(false);
 
     return 0;
-}
+}}
 """
 
 javatemplate = """include java.util.*;
@@ -19,11 +19,11 @@ javatemplate = """include java.util.*;
 /**
  * Task: {0}
  */
-public class {0} {
-    public static void main(string[] args) {
+public class {0} {{
+    public static void main(string[] args) {{
 
-    }
-}
+    }}
+}}
 """
 
 python2template = """#!/usr/bin/env python2
