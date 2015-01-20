@@ -91,6 +91,8 @@ def select(ctx):
     defpath = click.prompt("Default task path", default=defpath)
     try:
         makedirs(defpath)
-    except FileExistsError:
+    except OSError as e:
+        if e.errno != 17:
+            raise
         pass
     db.paths[id] = defpath

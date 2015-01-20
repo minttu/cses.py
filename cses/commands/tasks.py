@@ -301,7 +301,9 @@ def create(ctx, course, task):
     path = os.path.join(db.paths[course], fname)
     try:
         os.makedirs(os.path.split(path)[0])
-    except FileExistsError:
+    except OSError as e:
+        if e.errno != 17:
+            raise
         pass
 
     if os.path.isfile(path):
