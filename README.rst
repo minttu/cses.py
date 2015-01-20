@@ -3,9 +3,6 @@ cses.py
 
 A command line client for `cses.fi`_
 
-Currently very incomplete. All of the commands can be abbreviated as long as
-there is no collision.
-
 Installing
 ----------
 
@@ -25,6 +22,8 @@ Finally, to submit your code for evaluation, you can use ``cses submit``.
 
 Commands
 --------
+
+All of the commands can be abbreviated as long as there is no collision.
 
 .. code::
 
