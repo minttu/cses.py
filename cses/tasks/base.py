@@ -55,11 +55,11 @@ class Base(object):
             for future in as_completed(futures):
                 future.result()
 
-    def run(self, cmd, filename, input=None):
+    def run(self, cmd, filename, input=None, timeout=3):
         pool = Pool(processes=1)
         res = pool.apply_async(self._run, [cmd, filename, input])
         try:
-            return res.get(timeout=3)
+            return res.get(timeout=timeout)
         except multiprocessing.context.TimeoutError:
             return "", "TIMEOUT", 1
 
@@ -88,6 +88,23 @@ class Base(object):
 
     def _run_cmd(self, filename):
         raise NotImplementedError()
+
+    def user_run(self, filename):
+        self.maketmp()
+        print("Preparing")
+        out, err, code = self._prepare(filename)
+
+        if len(err) > 0:
+            sys.stderr.write(err + "\n")
+        if code != 0:
+            sys.exit(code)
+
+        cmd = self._run_cmd(self.gettmp())
+        print("Running {}".format(" ".join(cmd)))
+        ret = Popen(cmd, shell=True,
+                    cwd=path.split(self.gettmp())[0])
+        code = ret.communicate()
+        sys.exit(ret.returncode)
 
     def test(self, filename, tests):
         if tests["result"] != "ok":

@@ -57,5 +57,7 @@ All of the commands can be abbreviated as long as there is no collision.
        shows the current tasks description in your browser
    cses test
        tests the file locally
+   cses run
+       runs the file
 
 .. _cses.fi: http://cses.fi/

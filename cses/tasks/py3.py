@@ -1,3 +1,4 @@
+import shutil
 from cses.tasks.base import Base
 
 template = """#!/usr/bin/env python3
@@ -8,3 +9,10 @@ class Py3Task(Base):
 
     def __init__(self):
         super().__init__("Py3", ["py3"], template)
+
+    def _prepare(self, filename):
+        shutil.copy2(filename, self.gettmp())
+        return "", "", 0
+
+    def _run_cmd(self, filename):
+        return ["python3", filename]
