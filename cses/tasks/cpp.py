@@ -22,42 +22,8 @@ class CPPTask(Base):
         super().__init__("C++", ["cpp", "cc", "c"], template)
         self.compile_cmd = ["g++", "-std=c++0x", "-O2", "-Wall", "-o"]
 
-    def _test(self, filename, tests):
-        out, err, code = self.run(self.compile_cmd + [self.gettmp(), filename],
-                                  filename)
-        if code != 0:
-            sys.stderr.write(err + "\n")
-            sys.exit(code)
+    def _prepare(self, filename):
+        return self.run(self.compile_cmd + [self.gettmp(), filename], filename)
 
-        if len(err) > 0:
-            sys.stderr.write(err + "\n")
-
-        ok = True
-
-        for test in tests["test"]:
-            sys.stdout.write("#{} ".format(test["order"]))
-            fin = self.gettmp(test["input"])
-            fint = ""
-            with open(fin) as fp:
-                fint = fp.read()
-            fout = self.gettmp(test["output"])
-            foutt = ""
-            with open(fout) as fp:
-                foutt = fp.read()
-
-            out, err, code = self.run([self.gettmp()], fin, fint)
-            if code != 0:
-                sys.stderr.write("\n" + err + "\n")
-                sys.exit(code)
-
-            if len(err) > 0:
-                sys.stderr.write("\n" + err + "\n")
-            sys.stdout.flush()
-            if not self.compare(foutt, out):
-                ok = False
-            else:
-                sys.stdout.write("OK\n")
-                sys.stdout.flush()
-        if not ok:
-            sys.stderr.write("\nThere were some errors.\n")
-            sys.exit(1)
+    def _run_cmd(self, filename):
+        return [filename]

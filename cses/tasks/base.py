@@ -1,10 +1,12 @@
 import os
 import sys
 import requests
+import multiprocessing
 from os import path, makedirs
 from subprocess import PIPE, Popen
 from tempfile import gettempdir
 from itertools import chain
+from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 
@@ -54,6 +56,14 @@ class Base(object):
                 future.result()
 
     def run(self, cmd, filename, input=None):
+        pool = Pool(processes=1)
+        res = pool.apply_async(self._run, [cmd, filename, input])
+        try:
+            return res.get(timeout=3)
+        except multiprocessing.context.TimeoutError:
+            return "", "TIMEOUT", 1
+
+    def _run(self, cmd, filename, input=None):
         try:
             ret = Popen(cmd,
                         stdout=PIPE,
@@ -73,7 +83,10 @@ class Base(object):
     def applies_to(self, filename):
         return any([filename.endswith(x) for x in self.file_extensions])
 
-    def _test(self, filename, tests):
+    def _prepare(self, filename):
+        raise NotImplementedError()
+
+    def _run_cmd(self, filename):
         raise NotImplementedError()
 
     def test(self, filename, tests):
@@ -83,22 +96,52 @@ class Base(object):
         print("Downloading tests")
         self.maketmp()
         self.download_tests(tests)
-        self._test(filename, tests)
+        out, err, code = self._prepare(filename)
+
+        if len(err) > 0:
+            sys.stderr.write(err + "\n")
+        if code != 0:
+            sys.exit(code)
+
+        ok = True
+        for test in tests["test"]:
+            sys.stdout.write("#{} ".format(test["order"]))
+            f_in = self.gettmp(test["input"])
+            f_expected = self.gettmp(test["output"])
+            c_in, c_expected = "", ""
+            with open(f_in) as fp:
+                c_in = fp.read()
+            with open(f_expected) as fp:
+                c_expected = fp.read()
+            got, err, code = self.run(self._run_cmd(self.gettmp()),
+                                      f_in, c_in)
+            if len(err) > 0:
+                sys.stderr.write("\n{}\n".format(err))
+            sys.stdout.flush()
+            sys.stderr.flush()
+            if not self.compare(c_expected, got):
+                ok = False
+            else:
+                print("OK\n")
+        if not ok:
+            sys.stderr.write("\nThere were some errors.\n")
+            sys.exit(1)
 
     def compare(self, expected, got):
         if expected != got:
             # ToDo: Whitespace might be right even if different
+            limit = 15
             sys.stderr.write("FAIL\nExpected:\n=========\n")
             expected_lines = expected.split("\n")
-            sys.stderr.writelines(expected_lines[:20])
+            sys.stderr.write("\n".join(expected_lines[:limit]))
             sys.stderr.write("\n")
-            if len(expected_lines) > 20:
+            if len(expected_lines) > limit:
                 sys.stderr.write("...\n")
             sys.stderr.write("\nGot:\n====\n")
             got_lines = got.split("\n")
-            sys.stderr.writelines(got_lines[:20])
+            sys.stderr.write("\n".join(got_lines[:limit]))
             sys.stderr.write("\n")
-            if len(got_lines) > 20:
+            if len(got_lines) > limit:
                 sys.stderr.write("...\n")
             sys.stderr.flush()
             return False
