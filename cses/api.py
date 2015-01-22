@@ -46,5 +46,12 @@ class API(object):
                           "pass": password,
                           "ticket": submission})
 
+    def tests(self, username, password, task, course):
+        return self.post("tests",
+                         {"nick": username,
+                          "pass": password,
+                          "task": task,
+                          "course": course})
+
 
 pass_api = click.make_pass_decorator(API, ensure=True)

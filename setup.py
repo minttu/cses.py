@@ -21,7 +21,7 @@ setup(
     author_email = "juhani@imberg.fi",
     url = "https://github.com/JuhaniImberg/cses.py",
     license = "MIT",
-    packages = ["cses", "cses.commands"],
+    packages = ["cses", "cses.commands", "cses.tasks"],
     entry_points = {
         "console_scripts": [
             "cses=cses.cli:cli"

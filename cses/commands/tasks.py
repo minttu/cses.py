@@ -250,7 +250,26 @@ def edit(ctx, course, task):
         ctx.fail("No file associated with that task")
 
     file = db.files[course][task]
+    db.close()
     click.edit(filename=file)
+
+
+@cli.command()
+@click.pass_context
+@pass_course
+@pass_task
+def test(ctx, course, task):
+    "Test the task locally"
+    db = ctx.ensure_object(DB)
+    api = ctx.ensure_object(API)
+    if not db.files or course not in db.files or task not in db.files[course]:
+        ctx.fail("No file associated with that task")
+    fname = db.files[course][task]
+    from cses.tasks import detect_type
+    type = detect_type(fname)
+    if type == None:
+        ctx.fail("Could not detect the type")
+    type.test(fname, api.tests(db.username, db.password, task, course))
 
 
 @cli.command()

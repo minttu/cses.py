@@ -13,6 +13,9 @@ class DB(object):
         super().__setattr__("shelve", data)
         atexit.register(data.close)
 
+    def close(self):
+        super().__getattribute__("shelve").close()
+
     def __getattr__(self, name):
         return self.shelve.get(name)
 
