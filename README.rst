@@ -55,5 +55,7 @@ All of the commands can be abbreviated as long as there is no collision.
        edits the current tasks file with your default editor ($EDITOR)
    cses show
        shows the current tasks description in your browser
+   cses test
+       tests the file locally
 
 .. _cses.fi: http://cses.fi/
