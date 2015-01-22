@@ -7,9 +7,9 @@ from functools import wraps
 from cses.cli import cli
 from cses.api import API
 from cses.db import DB
-from cses.filetype import FileType
 from cses.shorthand_group import ShorthandGroup
 from cses.commands.courses import pass_course
+from cses.tasks import detect_type, languages
 
 
 @cli.group(cls=ShorthandGroup)
@@ -175,7 +175,10 @@ def submit(ctx, course, task):
         ctx.fail("No file associated with that task")
 
     file = db.files[course][task]
-    lang = FileType.detect(file)
+    lang = detect_type(file)
+    if lang == None:
+        ctx.fail("Cound not detect the language")
+    lang = lang.name
     code = ""
     with open(file, "r") as fp:
         code = fp.read()
@@ -265,7 +268,6 @@ def test(ctx, course, task):
     if not db.files or course not in db.files or task not in db.files[course]:
         ctx.fail("No file associated with that task")
     fname = db.files[course][task]
-    from cses.tasks import detect_type
     type = detect_type(fname)
     if type == None:
         ctx.fail("Could not detect the type")
@@ -288,14 +290,14 @@ def create(ctx, course, task):
     fname = ""
     fcontent = ""
     click.echo("Available languages:")
-    click.echo(", ".join([x[0] for x in FileType.data]))
+    click.echo(", ".join([x.name for x in languages]))
     while True:
         sel = click.prompt("The language", default="C++")
         sel = sel.lower()
-        for lang in FileType.data:
-            if lang[0].lower().startswith(sel):
-                fname = lang[1][0]
-                fcontent = lang[2]
+        for lang in languages:
+            if lang.name.lower().startswith(sel):
+                fname = lang.file_extensions[0]
+                fcontent = lang.template
                 break
         else:
             if not click.confirm("Can't understand you, try again",
@@ -331,6 +333,7 @@ def create(ctx, course, task):
                           "associate it instead?").format(path), default=True):
             return ctx.invoke(associate, filename=path)
 
-    with open(path, "w") as fp:
+    with open(path, "w+") as fp:
         fp.write(fcontent)
+        click.echo("Wrote {}".format(path))
     ctx.invoke(associate, filename=path)

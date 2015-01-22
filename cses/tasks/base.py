@@ -14,7 +14,7 @@ class Base(object):
     def __init__(self, name, file_extensions, template):
         self.name = name
         self.file_extensions = file_extensions
-        self.template = ""
+        self.template = template
 
     def gettmp(self, name="out"):
         tmp = path.join(gettempdir(), "cses", name)
@@ -80,15 +80,26 @@ class Base(object):
         if tests["result"] != "ok":
             sys.stderr.write("Can't test this")
             sys.exit(1)
+        print("Downloading tests")
         self.maketmp()
         self.download_tests(tests)
         self._test(filename, tests)
 
-
-languages = []
-
-def detect_type(filename):
-    global languages
-    if len(languages) == 0:
-        languages = [c() for c in Base.__subclasses__()]
-    return next(filter(lambda x: x.applies_to(filename), languages), None)
+    def compare(self, expected, got):
+        if expected != got:
+            # ToDo: Whitespace might be right even if different
+            sys.stderr.write("FAIL\nExpected:\n=========\n")
+            expected_lines = expected.split("\n")
+            sys.stderr.writelines(expected_lines[:20])
+            sys.stderr.write("\n")
+            if len(expected_lines) > 20:
+                sys.stderr.write("...\n")
+            sys.stderr.write("\nGot:\n====\n")
+            got_lines = got.split("\n")
+            sys.stderr.writelines(got_lines[:20])
+            sys.stderr.write("\n")
+            if len(got_lines) > 20:
+                sys.stderr.write("...\n")
+            sys.stderr.flush()
+            return False
+        return True

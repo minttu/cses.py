@@ -32,6 +32,8 @@ class CPPTask(Base):
         if len(err) > 0:
             sys.stderr.write(err + "\n")
 
+        ok = True
+
         for test in tests["test"]:
             sys.stdout.write("#{} ".format(test["order"]))
             fin = self.gettmp(test["input"])
@@ -50,8 +52,12 @@ class CPPTask(Base):
 
             if len(err) > 0:
                 sys.stderr.write("\n" + err + "\n")
-
-            if foutt != out:
-                sys.stdout.write("FAIL\n")
+            sys.stdout.flush()
+            if not self.compare(foutt, out):
+                ok = False
             else:
                 sys.stdout.write("OK\n")
+                sys.stdout.flush()
+        if not ok:
+            sys.stderr.write("\nThere were some errors.\n")
+            sys.exit(1)
