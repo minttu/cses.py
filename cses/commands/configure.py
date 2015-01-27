@@ -18,7 +18,7 @@ def configure(ctx):
         if resp["success"] == "yes":
             break
         else:
-            if not click.confirm("Auth faield, try again", default=True):
+            if not click.confirm("Auth failed, try again", default=True):
                 ctx.fail("Could not authenticate")
     db.username = username
     db.password = password

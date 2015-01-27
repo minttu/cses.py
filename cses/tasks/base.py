@@ -106,7 +106,7 @@ class Base(object):
         code = ret.communicate()
         sys.exit(ret.returncode)
 
-    def test(self, filename, tests):
+    def test(self, filename, tests, failfast):
         if tests["result"] != "ok":
             sys.stderr.write("Can't test this")
             sys.exit(1)
@@ -140,6 +140,10 @@ class Base(object):
                 ok = False
             else:
                 print("OK\n")
+            if not ok and failfast:
+                sys.stderr.write("\nThere were some errors.\n")
+                sys.exit(1)
+
         if not ok:
             sys.stderr.write("\nThere were some errors.\n")
             sys.exit(1)
