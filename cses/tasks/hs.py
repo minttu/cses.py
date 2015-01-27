@@ -11,8 +11,8 @@ class HaskellTask(Base):
         super().__init__("Haskell", ["hs"], template)
 
     def _prepare(self, filename):
-        return self.run(["ghc", "--make", "-o", self.gettmp(), filename],
-                        filename, timeout=10)
+        return self.run(["ghc", "--make", "-o", self.getfile(), filename],
+                        timeout=10)
 
     def _run_cmd(self, filename):
         return [filename]

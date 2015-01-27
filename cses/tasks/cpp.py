@@ -23,7 +23,7 @@ class CPPTask(Base):
         self.compile_cmd = ["g++", "-std=c++0x", "-O2", "-Wall", "-o"]
 
     def _prepare(self, filename):
-        return self.run(self.compile_cmd + [self.gettmp(), filename], filename)
+        return self.run(self.compile_cmd + [self.getfile(), filename])
 
     def _run_cmd(self, filename):
         return [filename]

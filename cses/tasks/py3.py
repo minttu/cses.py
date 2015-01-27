@@ -11,7 +11,7 @@ class Py3Task(Base):
         super().__init__("Py3", ["py3"], template)
 
     def _prepare(self, filename):
-        shutil.copy2(filename, self.gettmp())
+        shutil.copy2(filename, self.getfile())
         return "", "", 0
 
     def _run_cmd(self, filename):

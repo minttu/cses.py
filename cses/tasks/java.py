@@ -24,8 +24,7 @@ class JavaTask(Base):
 
     def _prepare(self, filename):
         self.ogname = path.split(filename)[1].split(".")[0]
-        dir = path.split(self.gettmp())[0]
-        return self.run(["javac", "-d", dir, filename], filename)
+        return self.run(["javac", "-d", self.getdir(), filename])
 
     def _run_cmd(self, filename):
         return ["java", "-cp", ".", self.ogname]
