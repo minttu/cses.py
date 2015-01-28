@@ -82,7 +82,7 @@ class Result(object):
         def show(str):
             nl_num = str[:200].count("\n")
             if nl_num >= 15:
-                return "\n".join(str.split("\n")[15]) + "\n...\n"
+                return "\n".join(str.split("\n")[:15]) + "\n...\n"
             return str[:200] if len(str) < 200 else str[:200] + "\n...\n"
 
         msg = "|> Test #{} {}".format(self.testid, self.message)
