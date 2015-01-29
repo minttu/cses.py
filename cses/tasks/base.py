@@ -62,15 +62,16 @@ class Run(object):
 
 class Result(object):
 
-    def __init__(self, testid, success=True, message="ok",
-                 warning="", input="", got="", expected=""):
+    def __init__(self, testid, stderr="", input="", got="", expected="",
+                 full=False):
         self.testid = testid
-        self.success = success
-        self.message = message
-        self.warning = warning
+        self.warning = stderr
         self.input = input
         self.got = got
         self.expected = expected
+        self.full = full
+        self.success = got == expected
+        self.message = "ok\n" if self.success else "fail\n"
 
     def __str__(self):
         def ens(str):
@@ -80,10 +81,12 @@ class Result(object):
             return "|> {}\n".format(str)
 
         def show(str):
-            nl_num = str[:200].count("\n")
-            if nl_num >= 15:
-                return "\n".join(str.split("\n")[:15]) + "\n...\n"
-            return str[:200] if len(str) < 200 else str[:200] + "\n...\n"
+            if not self.full:
+                nl_num = str[:200].count("\n")
+                if nl_num >= 15:
+                    return "\n".join(str.split("\n")[:15]) + "\n...\n"
+                return str[:200] if len(str) < 200 else str[:200] + "\n...\n"
+            return str
 
         msg = "|> Test #{} {}".format(self.testid, self.message)
         if self.warning != "":
@@ -171,7 +174,7 @@ class Base(object):
         code = ret.communicate()
         sys.exit(ret.returncode)
 
-    def test(self, filename, tests, failfast):
+    def test(self, filename, tests, keep_going, full):
         if tests["result"] != "ok":
             sys.stderr.write("Can't test this")
             sys.exit(1)
@@ -197,32 +200,22 @@ class Base(object):
         with click.progressbar(tests["test"],
                                label="|> Running tests") as tests:
             for test in tests:
-                result = Result(test["order"])
-
                 f_in = self.getfile(test["input"])
                 f_expected = self.getfile(test["output"])
 
-                c_in, c_expected = "", ""
+                input, c_expected = "", ""
                 with open(f_in) as fp:
-                    c_in = fp.read()
+                    input = fp.read()
                 with open(f_expected) as fp:
                     expected = fp.read()
 
                 got, err, code = self.run(self._run_cmd(self.getfile()),
-                                          input=c_in)
+                                          input=input)
 
-                result.success = self.compare(got, expected)
-                result.got = got
-                result.expected = expected
-                result.input = c_in
-                result.warning = err
-
+                result = Result(test["order"], err, input, got, expected, full)
                 returns.append(result)
 
-                if not result.success:
-                    result.message = "fail\n"
-
-                if not result.success and failfast:
+                if not result.success and not keep_going:
                     break
 
         ok = True
