@@ -158,8 +158,8 @@ def current(ctx, course, task):
                       db.password)
 
     pos = 0
-    for ind, task in enumerate(tasks):
-        if task["id"] == task:
+    for ind, tsk in enumerate(tasks):
+        if tsk["id"] == task:
             pos = ind
             break
 

@@ -56,6 +56,8 @@ All of the commands can be abbreviated as long as there is no collision.
    cses show
        shows the current tasks description in your browser
    cses test
+       [-k --keep-going] Wont stop at the first failed test
+       [--full] Prints the full input, expected output and actual output
        tests the file locally
    cses run
        runs the file
