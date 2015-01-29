@@ -1,9 +1,12 @@
+# coding: utf-8
+
 import os
 import sys
 import requests
 import multiprocessing
 import click
 import time
+import difflib
 
 from os import path, makedirs
 from subprocess import PIPE, Popen
@@ -63,7 +66,7 @@ class Run(object):
 class Result(object):
 
     def __init__(self, testid, stderr="", input="", got="", expected="",
-                 full=False):
+                 full=False, diff=False):
         self.testid = testid
         self.warning = stderr
         self.input = input
@@ -72,6 +75,7 @@ class Result(object):
         self.full = full
         self.success = got == expected
         self.message = "ok\n" if self.success else "fail\n"
+        self.diff = diff
 
     def __str__(self):
         def ens(str):
@@ -98,6 +102,13 @@ class Result(object):
             msg += show(self.expected)
             msg += title("Your output")
             msg += show(self.got)
+            if self.diff:
+                msg += title("Difference")
+                for line in difflib.context_diff(self.expected.splitlines(True),
+                                                 self.got.splitlines(True),
+                                                 fromfile="expected",
+                                                 tofile="got"):
+                    msg += line
 
         return msg
 
@@ -174,7 +185,7 @@ class Base(object):
         code = ret.communicate()
         sys.exit(ret.returncode)
 
-    def test(self, filename, tests, keep_going, full):
+    def test(self, filename, tests, keep_going, full=False, diff=False):
         if tests["result"] != "ok":
             sys.stderr.write("Can't test this")
             sys.exit(1)
@@ -212,7 +223,8 @@ class Base(object):
                 got, err, code = self.run(self._run_cmd(self.getfile()),
                                           input=input)
 
-                result = Result(test["order"], err, input, got, expected, full)
+                result = Result(test["order"], err, input, got, expected, full,
+                                diff)
                 returns.append(result)
 
                 if not result.success and not keep_going:

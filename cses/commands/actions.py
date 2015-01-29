@@ -131,7 +131,8 @@ def edit(ctx, course, task):
 @pass_task
 @click.option("--keep-going", "-k", is_flag=True)
 @click.option("--full", is_flag=True)
-def test(ctx, course, task, keep_going, full):
+@click.option("--diff", "-d", is_flag=True)
+def test(ctx, course, task, keep_going, full, diff):
     "Test the task locally"
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
@@ -142,7 +143,7 @@ def test(ctx, course, task, keep_going, full):
     if type == None:
         ctx.fail("Could not detect the type")
     type.test(fname, api.tests(db.username, db.password, task, course),
-              keep_going, full)
+              keep_going, full, diff)
 
 
 @cli.command()
