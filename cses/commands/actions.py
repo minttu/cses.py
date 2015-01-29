@@ -129,8 +129,9 @@ def edit(ctx, course, task):
 @click.pass_context
 @pass_course
 @pass_task
-@click.option("--fail-fast", "-f", is_flag=True)
-def test(ctx, course, task, fail_fast):
+@click.option("--keep-going", "-k", is_flag=True)
+@click.option("--full", is_flag=True)
+def test(ctx, course, task, keep_going, full):
     "Test the task locally"
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
@@ -141,7 +142,7 @@ def test(ctx, course, task, fail_fast):
     if type == None:
         ctx.fail("Could not detect the type")
     type.test(fname, api.tests(db.username, db.password, task, course),
-              fail_fast)
+              keep_going, full)
 
 
 @cli.command()
