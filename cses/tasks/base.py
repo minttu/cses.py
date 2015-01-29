@@ -62,16 +62,16 @@ class Run(object):
 
 class Result(object):
 
-    def __init__(self, testid, full=True, success=True, message="ok",
-                 warning="", input="", got="", expected=""):
+    def __init__(self, testid, stderr="", input="", got="", expected="",
+                 full=False):
         self.testid = testid
-        self.full = full
-        self.success = success
-        self.message = message
-        self.warning = warning
+        self.warning = stderr
         self.input = input
         self.got = got
         self.expected = expected
+        self.full = full
+        self.success = got == expected
+        self.message = "ok\n" if self.success else "fail\n"
 
     def __str__(self):
         def ens(str):
@@ -200,30 +200,20 @@ class Base(object):
         with click.progressbar(tests["test"],
                                label="|> Running tests") as tests:
             for test in tests:
-                result = Result(test["order"], full)
-
                 f_in = self.getfile(test["input"])
                 f_expected = self.getfile(test["output"])
 
-                c_in, c_expected = "", ""
+                input, c_expected = "", ""
                 with open(f_in) as fp:
-                    c_in = fp.read()
+                    input = fp.read()
                 with open(f_expected) as fp:
                     expected = fp.read()
 
                 got, err, code = self.run(self._run_cmd(self.getfile()),
-                                          input=c_in)
+                                          input=input)
 
-                result.success = self.compare(got, expected)
-                result.got = got
-                result.expected = expected
-                result.input = c_in
-                result.warning = err
-
+                result = Result(test["order"], err, input, got, expected, full)
                 returns.append(result)
-
-                if not result.success:
-                    result.message = "fail\n"
 
                 if not result.success and not keep_going:
                     break
