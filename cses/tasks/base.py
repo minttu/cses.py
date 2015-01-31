@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import as_completed
 from threading import Thread
 
+from cses.ui import clr, color_prompt
 from cses.errors import RunTimeoutError, RunNoSuchProgramError
 
 
@@ -74,7 +75,8 @@ class Result(object):
         self.expected = expected
         self.full = full
         self.success = got == expected
-        self.message = "ok\n" if self.success else "fail\n"
+        self.message = "\033[32mok\n" if self.success else "\033[31mfail\n"
+        self.message += "\033[0m"
         self.diff = diff
 
     def __str__(self):
@@ -82,7 +84,7 @@ class Result(object):
             return str if str.endswith("\n") else str + "\n"
 
         def title(str):
-            return "|> {}\n".format(str)
+            return clr(str + "\n")
 
         def show(str):
             if not self.full:
@@ -92,7 +94,7 @@ class Result(object):
                 return str[:200] if len(str) < 200 else str[:200] + "\n...\n"
             return str
 
-        msg = "|> Test #{} {}".format(self.testid, self.message)
+        msg = "{}Test #{} {}".format(color_prompt, self.testid, self.message)
         if self.warning != "":
             msg += ens(self.warning)
         if not self.success and len(self.input) > 0:
@@ -171,7 +173,7 @@ class Base(object):
 
     def user_run(self, filename):
         self.makedir()
-        print("|> Preparing")
+        print(clr("Preparing"))
         out, err, code = self._prepare(filename)
 
         if len(err) > 0:
@@ -180,7 +182,7 @@ class Base(object):
             sys.exit(code)
 
         cmd = self._run_cmd(self.getfile())
-        print("|> Running {}".format(" ".join(cmd)))
+        print(clr("Running {}".format(" ".join(cmd))))
         ret = Popen(cmd, cwd=self.getdir())
         code = ret.communicate()
         sys.exit(ret.returncode)
@@ -193,11 +195,11 @@ class Base(object):
 
         with click.progressbar(self.download_tests(tests),
                                length=len(tests["test"]) * 2,
-                               label="|> Downloading tests") as downloads:
+                               label=clr("Downloading tests")) as downloads:
             for dl in downloads:
                 pass
 
-        print("|> Preparing code")
+        print(clr("Preparing code"))
 
         out, err, code = self._prepare(filename)
 
@@ -209,7 +211,7 @@ class Base(object):
         returns = []
 
         with click.progressbar(tests["test"],
-                               label="|> Running tests") as tests:
+                               label=clr("Running tests")) as tests:
             for test in tests:
                 f_in = self.getfile(test["input"])
                 f_expected = self.getfile(test["output"])
@@ -237,10 +239,10 @@ class Base(object):
                 print(res)
 
         if not ok:
-            print("There were some errors")
+            print("There were some \033[31merrors\033[0m")
             sys.exit(1)
         else:
-            print("All OK!")
+            print("All \033[32mOK\033[0m!")
 
     def compare(self, expected, got):
         return expected == got

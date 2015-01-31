@@ -7,6 +7,7 @@ from cses.cli import cli
 from cses.api import API
 from cses.db import DB
 from cses.shorthand_group import ShorthandGroup
+from cses.ui import clr
 
 
 @cli.group(cls=ShorthandGroup)
@@ -33,8 +34,7 @@ def pass_course(f):
 
 
 def show_courses(courses, id=None):
-    click.echo("Courses")
-    click.echo("=======")
+    click.echo(clr("Courses"))
     for course in courses:
         click.echo("{}: {} {}".format(course["id"],
                                       course["name"],
@@ -64,10 +64,11 @@ def select(ctx):
     show_courses(courses, id)
 
     while 1:
-        id = click.prompt("Enter a course id", default=id, type=int)
+        id = click.prompt(clr("Enter a course id"), default=id, type=int)
         if id not in valid_ids:
-            if not click.confirm("Invalid course id, try again", default=True):
-                ctx.fail("Could not select a course")
+            if not click.confirm(clr("Invalid course id, try again"),
+                                 default=True):
+                ctx.fail(clr("Could not select a course"))
         else:
             break
     db.course = id
@@ -85,10 +86,10 @@ def select(ctx):
             name = i["nick"]
             break
     else:
-        ctx.fail("Could not field the course")
+        ctx.fail(clr("Could not field the course"))
 
     defpath = db.paths.get(id, path.join(path.expanduser("~"), "cses", name))
-    defpath = click.prompt("Default task path", default=defpath)
+    defpath = click.prompt(clr("Default task path"), default=defpath)
     try:
         makedirs(defpath)
     except OSError as e:

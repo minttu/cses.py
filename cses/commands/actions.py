@@ -9,6 +9,7 @@ from cses.db import DB
 from cses.commands.tasks import pass_course
 from cses.commands.tasks import pass_task
 from cses.tasks import detect_type, languages
+from cses.ui import clr, color_prompt
 
 
 @cli.command()
@@ -40,12 +41,12 @@ def submit(ctx, course, task):
     api = ctx.ensure_object(API)
 
     if not db.files or course not in db.files or task not in db.files[course]:
-        ctx.fail("No file associated with that task")
+        ctx.fail(clr("No file associated with that task"))
 
     file = db.files[course][task]
     lang = detect_type(file)
     if lang == None:
-        ctx.fail("Cound not detect the language")
+        ctx.fail(clr("Cound not detect the language"))
     lang = lang.name
     code = ""
     with open(file, "r") as fp:
@@ -56,7 +57,7 @@ def submit(ctx, course, task):
         ctx.fail(sendreq["message"])
 
     ticket = sendreq["ticket"]
-    click.echo("Submission ID: {}, waiting for results...".format(ticket))
+    click.echo(clr("Submission ID: {}, waiting for results...").format(ticket))
 
     old_status = ""
     lineclear = "\033[2K\033[80D"
@@ -70,18 +71,18 @@ def submit(ctx, course, task):
 
         if status == "COMPILE ERROR":
             sys.stdout.write("\n")
-            ctx.fail("Compile error")
+            ctx.fail("\033[31mCompile merror\033[0m")
 
         elif status == "READY":
-            click.echo("{}Test results".format(lineclear))
-            click.echo("============")
+            click.echo("{}{}Test results".format(lineclear, color_prompt))
             for ind, test in enumerate(resreq["test"]):
                 click.echo("#{}: {}".format(ind+1, test["status"]))
             click.echo("Score: {}".format(resreq["score"]))
             break
 
         if old_status != status:
-            sys.stdout.write("{}Status: {}".format(lineclear, status))
+            sys.stdout.write("{}{}Status: {}".format(lineclear, color_prompt,
+                                                     status))
             sys.stdout.flush()
             old_status = status
 
@@ -104,7 +105,7 @@ def show(ctx, course, task):
             name = i["nick"]
             break
     else:
-        ctx.fail("Could not field the course")
+        ctx.fail(clr("Could not field the course"))
 
     click.launch("http://cses.fi/{}/task/{}/".format(name, task))
 
@@ -118,7 +119,7 @@ def edit(ctx, course, task):
     db = ctx.ensure_object(DB)
 
     if not db.files or course not in db.files or task not in db.files[course]:
-        ctx.fail("No file associated with that task")
+        ctx.fail(clr("No file associated with that task"))
 
     file = db.files[course][task]
     db.close()
@@ -137,11 +138,11 @@ def test(ctx, course, task, keep_going, full, diff):
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
     if not db.files or course not in db.files or task not in db.files[course]:
-        ctx.fail("No file associated with that task")
+        ctx.fail(clr("No file associated with that task"))
     fname = db.files[course][task]
     type = detect_type(fname)
     if type == None:
-        ctx.fail("Could not detect the type")
+        ctx.fail(clr("Could not detect the type"))
     type.test(fname, api.tests(db.username, db.password, task, course),
               keep_going, full, diff)
 
@@ -155,11 +156,11 @@ def run(ctx, course, task):
     db = ctx.ensure_object(DB)
     api = ctx.ensure_object(API)
     if not db.files or course not in db.files or task not in db.files[course]:
-        ctx.fail("No file associated with that task")
+        ctx.fail(clr("No file associated with that task"))
     fname = db.files[course][task]
     type = detect_type(fname)
     if type == None:
-        ctx.fail("Could not detect the type")
+        ctx.fail(clr("Could not detect the type"))
     type.user_run(fname)
 
 
@@ -173,15 +174,15 @@ def create(ctx, course, task):
     api = ctx.ensure_object(API)
 
     if task in db.files[course]:
-        if not click.confirm("There is already a file, change the file"):
+        if not click.confirm(clr("There is already a file, change the file")):
             return
 
     fname = ""
     fcontent = ""
-    click.echo("Available languages:")
+    click.echo(clr("Available languages:"))
     click.echo(", ".join([x.name for x in languages]))
     while True:
-        sel = click.prompt("The language", default="C++")
+        sel = click.prompt(clr("The language"), default="C++")
         sel = sel.lower()
         for lang in languages:
             if lang.name.lower().startswith(sel):
@@ -189,9 +190,9 @@ def create(ctx, course, task):
                 fcontent = lang.template
                 break
         else:
-            if not click.confirm("Can't understand you, try again",
+            if not click.confirm(clr("Can't understand you, try again"),
                                  default=True):
-                ctx.fail("Could not select language")
+                ctx.fail(clr("Could not select language"))
             else:
                 continue
         break
@@ -203,10 +204,10 @@ def create(ctx, course, task):
             fname = i["name"].replace(" ", "_") + "." + fname
             break
     else:
-        ctx.fail("Could not find the task")
+        ctx.fail(clr("Could not find the task"))
 
     if course not in db.paths:
-        ctx.fail("The course doesn't have a default path")
+        ctx.fail(clr("The course doesn't have a default path"))
 
     path = os.path.join(db.paths[course], fname)
     try:
@@ -217,12 +218,13 @@ def create(ctx, course, task):
         pass
 
     if os.path.isfile(path):
-        if click.confirm(("There is already a file"
-                          "with the name {} "
-                          "associate it instead?").format(path), default=True):
+        if click.confirm(clr(("There is already a file"
+                              "with the name {} "
+                              "associate it instead?")).format(path),
+                         default=True):
             return ctx.invoke(associate, filename=path)
 
     with open(path, "w+") as fp:
         fp.write(fcontent)
-        click.echo("Wrote {}".format(path))
+        click.echo(clr("Wrote {}".format(path)))
     ctx.invoke(associate, filename=path)

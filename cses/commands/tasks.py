@@ -11,6 +11,7 @@ from cses.db import DB
 from cses.shorthand_group import ShorthandGroup
 from cses.commands.courses import pass_course
 from cses.tasks import detect_type, languages
+from cses.ui import clr
 
 
 @cli.group(cls=ShorthandGroup)
@@ -40,15 +41,23 @@ def show_task(tasks, pos, id=None, files={}):
     fname = ""
     if task["id"] in files:
         fname = files[task["id"]]
-    selected = "(Selected)" if id is task["id"] else ""
-    status = ""
+    status = []
+    if id is task["id"]:
+        status.append("\033[4mSelected\033[0m")
     if "status" in task:
-        status = " (" + task["status"].capitalize() + ")"
-    click.echo("{}: {}{} [{}] {}".format(task["id"],
-                                         task["name"],
-                                         status,
-                                         fname,
-                                         selected))
+        task_status = task["status"].capitalize()
+        col = 3
+        if task_status[0] == "S":
+            col = 2
+        elif task_status[0] == "A":
+            col = 1
+        task_status = "\033[3{}m{}\033[0m".format(col, task_status)
+        status.append(task_status)
+    status = ", ".join(status)
+    click.echo("{0}: {1} ({3}) [{2}]".format(task["id"],
+                                           task["name"],
+                                           fname,
+                                           status))
 
 
 def show_tasks(tasks, id=None, files={}):
@@ -61,8 +70,7 @@ def show_tasks(tasks, id=None, files={}):
             coursename = "{} ({})".format(task["section"], task["deadline"])
             if section != None:
                 click.echo()
-            click.echo(coursename)
-            click.echo("=" * len(coursename))
+            click.echo(clr(coursename))
             section = task["section"]
         show_task(tasks, ind, id, files)
 
@@ -94,10 +102,10 @@ def select(ctx, course):
     show_tasks(tasks, id, db.files.get(course, {}))
 
     while 1:
-        id = click.prompt("Enter a task id", default=id, type=int)
+        id = click.prompt(clr("Enter a task id"), default=id, type=int)
         if id not in valid_ids:
-            if not click.confirm("Invalid task id, try again", default=True):
-                ctx.fail("Could not select a task")
+            if not click.confirm(clr("Invalid task id, try again"), default=True):
+                ctx.fail(clr("Could not select a task"))
         else:
             break
 
@@ -118,7 +126,7 @@ def next(ctx, course, dir=1):
         if len(tasks) > 0:
             id = tasks[0]["id"]
         else:
-            ctx.fail("Course has no tasks")
+            ctx.fail(clr("Course has no tasks"))
         show_task(tasks, 0, 0, db.files[course])
     else:
         pos = -1
@@ -127,12 +135,12 @@ def next(ctx, course, dir=1):
                 pos = i
                 break
         if pos == -1:
-            ctx.fail("I don't know how you managed this")
+            ctx.fail(clr("I don't know how you managed this"))
         new = pos + dir
         if new < len(tasks) and new >= 0:
             id = tasks[pos + dir]["id"]
         else:
-            ctx.fail("You are at the end of the available tasks")
+            ctx.fail(clr("You are at the end of the available tasks"))
         show_task(tasks, new, id, db.files[course])
     db.task = id
 
