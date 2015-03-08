@@ -8,7 +8,7 @@ template = """#!/usr/bin/env python3
 class Py3Task(Base):
 
     def __init__(self):
-        super().__init__("Py3", ["py3"], template)
+        super().__init__("Python3", ["py3"], template)
 
     def _prepare(self, filename):
         shutil.copy2(filename, self.getfile())
